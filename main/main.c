@@ -63,10 +63,15 @@ void a2dp_cb(esp_a2d_cb_event_t event,
 }
 
 /* ========== GAP CALLBACK ========== */
+static esp_bd_addr_t saved_bd_addr;
+static bool device_found = false;
+
 void my_gap_callback(esp_bt_gap_cb_event_t event,
                      esp_bt_gap_cb_param_t *param)
 {
-    if (event == ESP_BT_GAP_DISC_RES_EVT) {
+    switch (event) {
+
+    case ESP_BT_GAP_DISC_RES_EVT:
 
         for (int i = 0; i < param->disc_res.num_prop; i++) {
 
@@ -78,21 +83,38 @@ void my_gap_callback(esp_bt_gap_cb_event_t event,
                         eir, ESP_BT_EIR_TYPE_CMPL_LOCAL_NAME, &len);
 
                 if (name) {
-                    printf("Found device: %s\n", name);
-
                     if (strstr((char *)name, "Carvaan")) {
-                        printf("Carvaan Found! Connecting...\n");
 
-                        memcpy(peer_bd_addr,
+                        printf("Carvaan Found!\n");
+
+                        memcpy(saved_bd_addr,
                                param->disc_res.bda,
                                ESP_BD_ADDR_LEN);
 
-                        esp_a2d_source_connect(peer_bd_addr);
+                        device_found = true;
+
                         esp_bt_gap_cancel_discovery();
                     }
                 }
             }
         }
+        break;
+
+    case ESP_BT_GAP_DISC_STATE_CHANGED_EVT:
+
+        if (param->disc_st_chg.state == ESP_BT_GAP_DISCOVERY_STOPPED) {
+
+            printf("Discovery stopped\n");
+
+            if (device_found) {
+                printf("Connecting to Carvaan...\n");
+                esp_a2d_source_connect(saved_bd_addr);
+            }
+        }
+        break;
+
+    default:
+        break;
     }
 }
 
