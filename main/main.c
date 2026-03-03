@@ -14,29 +14,22 @@
 static esp_bd_addr_t peer_bd_addr = {0};
 
 /* ========== AUDIO CALLBACK (STEREO 44.1kHz) ========== */
+#include "esp_spiffs.h"
+
+FILE *wav_file = NULL;
+
 int32_t audio_data_callback(uint8_t *data, int32_t len)
 {
-    static int counter = 0;
-    const int samples_per_cycle = 44100 / 440;  // ≈100
-    const int half_cycle = samples_per_cycle / 2;
+    if (!wav_file) return 0;
 
-    int16_t *samples = (int16_t *)data;
-    int frames = len / 4;   // stereo
+    size_t read_bytes = fread(data, 1, len, wav_file);
 
-    for (int i = 0; i < frames; i++) {
-
-        int16_t sample =
-            (counter < half_cycle) ? 12000 : -12000;
-
-        samples[2*i]     = sample;  // Left
-        samples[2*i + 1] = sample;  // Right
-
-        counter++;
-        if (counter >= samples_per_cycle)
-            counter = 0;
+    if (read_bytes < len) {
+        fseek(wav_file, 44, SEEK_SET);  // skip WAV header
+        read_bytes += fread(data + read_bytes, 1, len - read_bytes, wav_file);
     }
 
-    return len;
+    return read_bytes;
 }
 /* ========== A2DP CALLBACK ========== */
 void a2dp_cb(esp_a2d_cb_event_t event,
@@ -123,7 +116,17 @@ void app_main(void)
 {
     nvs_flash_init();
     esp_bt_controller_mem_release(ESP_BT_MODE_BLE);
+    esp_vfs_spiffs_conf_t conf = {
+    .base_path = "/spiffs",
+    .partition_label = NULL,
+    .max_files = 5,
+    .format_if_mount_failed = true
+};
 
+esp_vfs_spiffs_register(&conf);
+
+wav_file = fopen("/spiffs/music.wav", "rb");
+fseek(wav_file, 44, SEEK_SET); // skip header
     esp_bt_controller_config_t bt_cfg =
         BT_CONTROLLER_INIT_CONFIG_DEFAULT();
 
