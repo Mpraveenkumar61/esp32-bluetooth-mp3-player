@@ -36,11 +36,11 @@
 #define SD_PIN_CS       16
 
 /* ========== WIFI CREDENTIALS ========== */
-#define WIFI_SSID       "iPhone"
-#define WIFI_PASSWORD   "mpraveenn"
+#define WIFI_SSID       "your ssid"
+#define WIFI_PASSWORD   "password"
 
 /* ========== SERVER URL ========== */
-#define MP3_URL         "http://172.20.10.3:8080/MUSIC.MP3"
+#define MP3_URL         "http://pc mac address:8080/MUSIC.MP3"
 #define MP3_PATH        "/sdcard/MUSIC.MP3"
 
 /* ========== NVS KEYS ========== */
